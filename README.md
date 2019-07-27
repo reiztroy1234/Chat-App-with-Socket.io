@@ -23,3 +23,5 @@ To install Sequelize, MySQL, Passport and Express you need to run:
 `npm install socket.io` for installing socket.io
 
 `npm install heroku` for installing heroku
+
+Created while Learning Socket.io with Nodejs from Coding Blocks
