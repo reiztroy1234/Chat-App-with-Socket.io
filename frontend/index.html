@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous">
+    </script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous">
+    </script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+        integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <script src="jquery-3.4.1.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+    <title>Chat App</title>
+</head>
+
+<body>
+    <h1>Chat App with Socket</h1>
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <div id="login-div">
+                    <label for="username">Username</label>
+                    <input type="text" id="loginbox" placeholder="Enter Username" class="form-control"><br>
+                    <button class="btn btn-primary" id="loginbtn">Login</button>
+                </div>
+                <div id="chat-div" style="display: none">
+                    <label for="typemessage">Type Message</label>
+                    <input type="text" id="msgbox" placeholder="New Message" class="form-control"><br>
+                    <button class="btn btn-primary" id="sendmsg">Send</button>
+                    <ul id="msglist"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br>
+    <h4>This is a simple chat app, created with Socket.io, a Nodejs library for realtime web applications, best for
+        chatting app. It enables realtime, bi-directional communication between web clients and servers. It has two
+        parts: a client-side library that runs in the browser, and a server-side library for Node.js. Both components
+        have a nearly identical API.</h4>
+    <a href="https://socket.io/">More about Socket.io</a>
+    <p>Login with any name, you want.
+        If you want to send message to someone, told them to login with any name, know his/her username and send message
+        with <b> @username: [Write your message]</b>. <br>
+        If you want to broadcast your message to everyone just write normal message and send.
+    </p><br>
+
+    <center>
+        <h4>Get Code and Contribute</h4>
+        <a href="https://github.com/r4rohan/Weather-App" class="github"><i class="fab fa-github fa-2x"></i></a>
+    </center>
+</body>
+
+</html>
