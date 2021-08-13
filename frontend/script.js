@@ -3,22 +3,15 @@ socket.on('connected', () => {
     console.log('Connected ' + socket.id)
 })
 // console.log("Socket formed on " + socket.id)
-
+/*
 $(function() {
-    let msglist = $('#msglist')
-    let sendbtn = $('#sendmsg')
-    let msgbox = $('#msgbox')
-    let loginbox = $('#loginbox')
-    let loginbtn = $('#loginbtn')
-    let loginDiv = $('#login-div')
-    let chatDiv = $('#chat-div')
-
-    let user = ''
-
+    let user = 'user'+Date.now;
+    let channel = '1'
     sendbtn.click(function () {
-        socket.emit('send_msg', {
+        socket.emit('data', {
             user: user,
-            message: msgbox.val()})
+            channel:channel,
+            message: msg})
     })
 
     loginbtn.click(function () {
@@ -30,7 +23,26 @@ $(function() {
         })
     })
 
-    socket.on('recv_msg', function (data) {
+    socket.on(channel, function (data) {
         msglist.append($('<li>' + data.user + ': ' + data.message + '</li>'))
     })
 })
+*/
+let SelectedChannel ='';
+
+function SetChannel(channel){
+    SelectedChannel = channel;
+    socket.on(SelectedChannel, (message) => {
+        onMessageReceived(message);
+    });
+}
+function Send(msg){
+    socket.emit('data', {
+        channel:SelectedChannel,
+        message:msg
+    });
+}
+
+function onMessageReceived(reply){
+    console.log('<< '+ reply);
+}

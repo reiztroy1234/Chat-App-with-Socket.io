@@ -17,13 +17,13 @@ app.use('/', express.static(path.join(__dirname, 'frontend')))
 io.on('connection', (socket) => {
     console.log("New Socket formed from " + socket.id)
     socket.emit('connected')
-    socket.on('login', (data) => {
+/*    socket.on('login', (data) => {
         //username is in data.user
         usersockets[data.user] = socket.id
         console.log(usersockets)
     })
     // listener on the socket
-    socket.on('send_msg', (data) => {
+    socket.on('data', (data) => {
         //socket.broadcast only other will get it
         if (data.message.startsWith('@')) {
             let recipient = data.message.split(':')[0].substr(1)
@@ -33,6 +33,11 @@ io.on('connection', (socket) => {
             socket.broadcast.emit('recv_msg', data)   //io.emit means every socket which is connected will get the msg
         }
     })
+*/
+socket.on('data', (v) => {
+    io.emit(v.channel, v.message);
+});
+
 })
 
 server.listen(SERVER_PORT, () => console.log('Website started on http://localhost:3333'))
