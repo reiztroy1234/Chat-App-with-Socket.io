@@ -9,35 +9,12 @@ const app = express();
 const server = http.createServer(app)
 const io = socketio(server)
 
-let usersockets = {}
-
-app.use('/', express.static(path.join(__dirname, 'frontend')))
-
-// this body of code runs for each socket
+app.use('/', express.static(path.join(__dirname, 'public')))
 io.on('connection', (socket) => {
-    console.log("New Socket formed from " + socket.id)
     socket.emit('connected')
-/*    socket.on('login', (data) => {
-        //username is in data.user
-        usersockets[data.user] = socket.id
-        console.log(usersockets)
-    })
-    // listener on the socket
-    socket.on('data', (data) => {
-        //socket.broadcast only other will get it
-        if (data.message.startsWith('@')) {
-            let recipient = data.message.split(':')[0].substr(1)
-            let rcpSocket = usersockets[recipient]
-            io.to(rcpSocket).emit('recv_msg', data)
-        } else {
-            socket.broadcast.emit('recv_msg', data)   //io.emit means every socket which is connected will get the msg
-        }
-    })
-*/
-socket.on('data', (v) => {
-    io.emit(v.channel, v.message);
-});
-
+    socket.on('data', (v) => {
+        io.emit(v.channel, {user:v.user,message:v.message});
+    });
 })
 
 server.listen(SERVER_PORT, () => console.log('Website started on http://localhost:3333'))
