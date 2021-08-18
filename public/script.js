@@ -71,7 +71,7 @@ function onMessageReceived(reply){
                 break;
         }
     }
-    //console.log(reply.user+': '+ reply.message);
+    console.log(reply.user+': '+ reply.message);
 }
 
 String.prototype.hashCode = function() {
