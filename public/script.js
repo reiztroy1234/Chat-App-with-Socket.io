@@ -6,7 +6,7 @@ let SelectedChannel ='';
 let SelectedUserName='user'+socket.id;
 function Subscribe(){
     let addr= document.getElementById('address');
-    if(addr && addr.innerText)
+    if(addr && addr.value)
     {
         var xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange = function() {
@@ -14,8 +14,8 @@ function Subscribe(){
                 var resp = JSON.parse(this.responseText);
                 SelectedUserName = resp.ip;
                 SetUserName(SelectedUserName.hashCode());
-                SetChannel(addr.innerText);
-                Send(addr.innerText);
+                SetChannel(addr.value);
+                Send(addr.value);
             }
         };
         xmlhttp.open("GET", 'https://api.ipify.org?format=json', true);
@@ -50,10 +50,13 @@ function onMessageReceived(reply){
     {
         switch(reply.event){
             case 'subscribed':
+                /*
                 var s = document.createElement('script');
                 s.type ='text/javascript';
                 s.src = reply.message;
-                document.getElementsByTagName('head')[0].append(s);        
+                document.getElementsByTagName('head')[0].append(s);  
+                */
+               console.log('subscribed');      
                 break;
             case 'unsubscribed':
                 alert('DISCONNECTED! ' + reply.message);

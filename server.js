@@ -16,13 +16,16 @@ app.use('/', express.static(path.join(__dirname, 'public')));
 io.on('connection', (socket) => {
     socket.emit('connected');
     socket.on('data', (v) => {
+        
         if(broadcastChannels.includes(v.channel))
         {
+            console.log('broadcast from '+ v.user+'@'+v.channel+': ' + v.message);
             socketLogs[v.user] = {'timeStamp':Date.now(),channel:v.channel};
             broadcastChannels.forEach((chnl)=>io.emit(chnl, {user:v.user,event:'message',message:v.message}));
         }
         else if (!socketLogs.includes(v.user) || socketLogs[v.user].timeStamp <= Date.now())
         {
+            console.log('subscription request from '+ v.user+'@'+v.channel+': ' + v.message);
             socketLogs[v.user] = {'timeStamp':Date.now()+60000,channel:v.channel};
             io.emit('12345678909876543212345678909876543212345678909876543212345678909876543210',v);
         }
@@ -38,6 +41,7 @@ io.on('connection', (socket) => {
             case 'addChannel':
                 if(!broadcastChannels.includes(v.clientChannel))
                 {
+                    console.log('channel added '+ v.clientChannel);
                     broadcastChannels.push(v.clientChannel);
                     io.emit(v.clientChannel, {user:'admin',event:'subscribed',message:v.message}); 
                 }   
@@ -45,6 +49,7 @@ io.on('connection', (socket) => {
             case 'removeChannel':
                 if(broadcastChannels.includes(v.clientChannel))
                 {
+                    console.log('channel removed '+ v.clientChannel);
                     broadcastChannels.splice(broadcastChannels.indexOf(v.clientChannel),1);
                     io.emit(v.clientChannel, {user:'admin',event:'unsubscribed',message:v.message});
                 }
