@@ -4,28 +4,7 @@ socket.on('connected', () => {
 })
 let SelectedChannel ='';
 let SelectedUserName='user'+socket.id;
-function Subscribe(){
-    let addr= document.getElementById('address');
-    if(addr && addr.value)
-    {
-        var xmlhttp = new XMLHttpRequest();
-        xmlhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var resp = JSON.parse(this.responseText);
-                SelectedUserName = resp.ip;
-                SetUserName(SelectedUserName.hashCode());
-                SetChannel(addr.value);
-                Send(addr.value);
-            }
-        };
-        xmlhttp.open("GET", 'https://api.ipify.org?format=json', true);
-        xmlhttp.send();
-    }
-    else
-    {
-        alert('Invalid Address');
-    }
-}
+
 function SetChannel(channel){
     socket.removeListener(SelectedChannel);
     SelectedChannel = channel;    
@@ -37,16 +16,69 @@ function SetUserName(username){
     SelectedUserName = username;
 }
 
-function Send(msg){
-    socket.emit('data', {
+
+function SendEvent(evnt,msg){
+    socket.emit(SelectedChannel, {
+        event:evnt,
         channel:SelectedChannel,
         user: SelectedUserName,
         message:msg
     });
+    console.log('MessageSent: ' + '['+evnt+']:' + msg);
 }
 
+function Subscribe()
+{
+    let addr= document.getElementById('address');
+    if(addr && addr.value)
+    {
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var resp = JSON.parse(this.responseText);
+                console.log('Your ip is '+resp.ip);
+                SelectedUserName = resp.ip;
+                SetUserName(SelectedUserName.hashCode());
+                SetChannel(addr.value);
+                Send('subscribe',addr.value);
+            }
+        };
+        xmlhttp.open("GET", 'https://api.ipify.org?format=json', true);
+        xmlhttp.send();
+    }
+    else
+    {
+        alert('Invalid Address');
+    }
+}
+
+function UnSubscribe(){
+    SendEvent('unsubscribe','Have a nice day!');
+}
+
+function Message(msg){
+    SendEvent('message',msg);
+}
+function GetSuggestionList(){
+    SendEvent('getSuggestionList',SelectedUserName);
+}
+function SetSuggestion(suggestion){
+    SendEvent('setSuggestion',suggestion);
+}
+function ClearSuggestion(suggestionId){
+    SendEvent('clearSuggestion',suggestionId);
+}
+function UpVoteSuggestion(suggestionId){
+    SendEvent('upVoteSuggestion',suggestionId);
+}
+function DownVoteSuggestion(suggestionId){
+    SendEvent('downVoteSuggestion',suggestionId);
+}
+function DirectMessage(resipientId,message){
+    SendEvent('directMessage',{resipientId:resipientId,message:message});
+}
 function onMessageReceived(reply){    
-    if(reply && reply.evemt)
+    if(reply && reply.event)
     {
         switch(reply.event){
             case 'subscribed':
@@ -56,16 +88,29 @@ function onMessageReceived(reply){
                 s.src = reply.message;
                 document.getElementsByTagName('head')[0].append(s);  
                 */
-               console.log('subscribed');      
+               //console.log('subscribed');      
                 break;
             case 'unsubscribed':
-                alert('DISCONNECTED! ' + reply.message);
+                //alert('DISCONNECTED! ' + reply.message);
                 break;
             case 'message':
-                console.log(reply.message);
+                //console.log(reply.message);
                 break;
             case 'error':
-                alert('ERROR! ' + reply.message);
+                //alert('ERROR! ' + reply.message);
+                break;
+            case 'getSuggestionList':
+                //SendEvent('getSuggestionList',{event:'getSuggestionList',user:v.user,message:suggestionList});
+                break;
+            case 'setSuggestion':
+                break;
+            case 'clearSuggestion':
+                break;
+            case 'upVoteSuggestion':
+                break;
+            case 'downVoteSuggestion':
+                break;
+            case 'directMessage':
                 break;
             default:
                 break;

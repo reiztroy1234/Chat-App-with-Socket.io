@@ -11,23 +11,23 @@ const io = socketio(server)
 
 let broadcastChannels = [];
 let socketLogs = [];
+let isLoggingEnabled = true;
+let isEchoLogToAdmin = false;
+let adminChannel = '12345678909876543212345678909876543212345678909876543212345678909876543210';
+let suggestionList = [];
+let suggestionLogs = [];
 
 app.use('/', express.static(path.join(__dirname, 'public')));
+
 io.on('connection', (socket) => {
     socket.emit('connected');
-    socket.on('data', (v) => {
-        
-        if(broadcastChannels.includes(v.channel))
+    socket.on('subscribe',(v)=>{
+        let userid = v.user+'@'+v.channel;
+        if (!socketLogs.includes(userid) && (socketLogs[userid] == undefined || socketLogs[userid].timeStamp <= Date.now()))
         {
-            console.log('broadcast from '+ v.user+'@'+v.channel+': ' + v.message);
-            socketLogs[v.user] = {'timeStamp':Date.now(),channel:v.channel};
-            broadcastChannels.forEach((chnl)=>io.emit(chnl, {user:v.user,event:'message',message:v.message}));
-        }
-        else if (!socketLogs.includes(v.user) || socketLogs[v.user].timeStamp <= Date.now())
-        {
-            console.log('subscription request from '+ v.user+'@'+v.channel+': ' + v.message);
-            socketLogs[v.user] = {'timeStamp':Date.now()+60000,channel:v.channel};
-            io.emit('12345678909876543212345678909876543212345678909876543212345678909876543210',v);
+            Log('subscription request from '+ userid +': ' + v.message);
+            socketLogs[userid] = {'timeStamp':Date.now()+60000};
+            io.emit(adminChannel,v);
         }
         else
         {
@@ -35,24 +35,41 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('12345678909876543212345678909876543212345678909876543212345678909876543210', (v) => {
+    socket.on(adminChannel, (v) => {
         switch(v.serverEvent)
         {
-            case 'addChannel':
+            case 'addChannel'://>>
                 if(!broadcastChannels.includes(v.clientChannel))
                 {
-                    console.log('channel added '+ v.clientChannel);
+                    Log('channel added '+ v.clientChannel);
                     broadcastChannels.push(v.clientChannel);
+                    io.on(v.clientChannel,onClientMessageReceived(v));
                     io.emit(v.clientChannel, {user:'admin',event:'subscribed',message:v.message}); 
                 }   
                 break;
-            case 'removeChannel':
-                if(broadcastChannels.includes(v.clientChannel))
-                {
-                    console.log('channel removed '+ v.clientChannel);
-                    broadcastChannels.splice(broadcastChannels.indexOf(v.clientChannel),1);
-                    io.emit(v.clientChannel, {user:'admin',event:'unsubscribed',message:v.message});
-                }
+            case 'removeChannel'://>>
+                ioRemoveChannel(v.clientChannel,v.message);
+                break;
+            case 'announcement'://>>
+                ioAdminBroadcast('announcement','admin',v.message);
+                break;
+            case 'setPoll'://>>
+                ioAdminBroadcast('setPoll','admin',v.message);
+                break;
+            case 'clearPoll'://>>
+                ioAdminBroadcast('clearPoll','admin',v.message);
+                break;
+            case 'addHTMLElement'://>>
+                ioAdminBroadcast('addHTMLElement','admin',v.message);
+                break;
+            case 'removeHTMLElement'://>>
+                ioAdminBroadcast('removeHTMLElement','admin',v.message);
+                break;
+            case 'directMessage'://>>
+                ioDirectMessage('admin',v.clientChannel,v.message);
+                break;
+            case 'echoLog'://>>
+                isEchoLogToAdmin = v.message == true || v.message == 'ON';
                 break;
             default:
                 break;
@@ -60,19 +77,132 @@ io.on('connection', (socket) => {
     });
 });
 
+function ioUserBroadcast(evnt,usr,msg){
+    Log('broadcast from '+ usr +': ' + msg);
+    broadcastChannels.forEach((chnl)=>io.emit(chnl, {event:evnt,user:usr,message:msg}));
+}
+
+function ioAdminBroadcast(evnt,msg)//<<
+{
+    broadcastChannels.forEach((chnl)=>io.emit(chnl, {user:'admin',event:evnt,message:msg}));
+}
+
+function ioDirectMessage(fromUsr,resipientId,msg)
+{
+    socketLogs.filter(s=>s.userid)
+    io.emit(toChannel,{event:'directMessage',from:fromUsr,message:msg});
+}
+
+function ioRemoveChannel(clientChannel,msg)//>>
+{
+    if(broadcastChannels.includes(clientChannel))
+    {
+        Log('channel removed '+ clientChannel);
+        broadcastChannels.splice(broadcastChannels.indexOf(clientChannel),1);
+        io.removeListener(clientChannel);
+        io.emit(clientChannel, {user:'admin',event:'unsubscribed',message:msg});
+        
+    }
+}
+
+function onClientMessageReceived(v){
+    let userid = v.user+'@'+v.channel;
+    if(broadcastChannels.includes(userid))
+    {
+        switch(v.message.event){
+            case 'getSuggestionList':
+                io.emit(v.channel,{event:'getSuggestionList',user:v.user,message:suggestionList});
+                break;
+            case 'setSuggestion':
+                if(!suggestionLogs.includes(v.channel) || suggestionLogs[v.channel] <= Date.now())
+                {
+                    let suggestionId = Date.now()/60000;
+                    suggestionLogs[v.channel] = Date.now()+10080000;//user can only make once every week
+                    suggestionList[suggestionId] = {owner:v.channel,upVotes:0,downVotes:0};
+                    ioUserBroadcast('setSuggestion',v.user,{isSuccess:true,suggestionId:suggestionId,message:v.message});
+                }
+                else
+                {
+                    io.emit(v.channel,{event:'setSuggestion',user:v.user,message:{isSuccess:false,message:'You can only make suggestion once a week.'}});
+                }
+                break;
+            case 'clearSuggestion':
+                if(suggestionList.includes(v.suggestionId) && suggestionList[v.suggestionId].owner == v.channel)
+                {
+                    suggestionList.splice(suggestionList.indexOf(v.suggestionId),1);
+                    ioUserBroadcast('clearSuggestion',v.user,{isSuccess:true,message:v.message});
+                }
+                break;
+            case 'upVoteSuggestion':
+                if(suggestionList.includes(v.suggestionId))
+                {
+                    if(isVote)
+                    {
+                        suggestionList[v.suggestionId].votedChannels.push(v.channel);
+                        suggestionList[v.suggestionId].upVotes++;
+                    }
+                    else if(suggestionList[v.suggestionId].votedChannels.includes(v.channel))
+                    {
+                        suggestionList[v.suggestionId].votedChannels.splice(suggestionList[v.suggestionId].votedChannels.indexOf(v.channel),1);
+                        suggestionList[v.suggestionId].upVotes--;
+                    }
+                }
+                break;
+            case 'downVoteSuggestion':
+                if(suggestionList.includes(v.suggestionId))
+                {
+                    if(v.isVote)
+                    {
+                        suggestionList[v.suggestionId].votedChannels.push(v.channel);
+                        suggestionList[v.suggestionId].upVotes++;
+                    }
+                    else if(suggestionList[v.suggestionId].votedChannels.includes(v.channel))
+                    {
+                        suggestionList[v.suggestionId].votedChannels.splice(suggestionList[v.suggestionId].votedChannels.indexOf(v.channel),1);
+                        suggestionList[v.suggestionId].upVotes--;
+                    }
+                }
+                break;
+            case 'directMessage':
+                if(broadcastChannels.includes(v.channel) && broadcastChannels.includes(message.resipientId))
+                {
+                    ioDirectMessage(v.user,message.resipientId,message.message);
+                    io.emit(v.channel,{event:'directMessage',user:v.user,message:{isSuccess:true,message:v.message}});
+                }
+                else
+                {
+                    io.emit(v.channel,{event:'directMessage',user:v.user,message:{isSuccess:false,message:'Either you or the resipient are not allowed.'}});
+                }
+                break;
+            default:
+                Log('broadcast from '+ userid +': ' + v.message);
+                socketLogs[userid] = {'timeStamp':Date.now()};
+                broadcastChannels.forEach((chnl)=>io.emit(chnl, {user:v.user,event:'message',message:v.message}));
+                break;
+        }
+        
+    }
+}
+
 //Scan socketLogs every hour to remove (30min) inactive users
 setInterval(function(){
     socketLogs.forEach(s=>{
         let timeNow = Date.now();
         if(s.timeStamp + 1800000 > timeNow)
         {
-            if(broadcastChannels.includes(s.channel))
-            {
-                broadcastChannels.splice(broadcastChannels.indexOf(s.channel),1);
-                io.emit(s.channel, {user:'admin',event:'unsubscribed',message:'Inactive users in more than 30min are automatically unsubscribed.'});
-            }
+            ioRemoveChannel(s.channel,'Inactive users in more than 30min are automatically unsubscribed.');
         }
     });
 },1800000);
+
+function Log(msg){
+    if(isLoggingEnabled){
+        console.log(msg);
+    }
+    if(isEchoLogToAdmin)//<<
+    {
+        io.emit(adminChannel,{user:'log',event:'echoLog',message:msg});
+    }
+}
 
 server.listen(SERVER_PORT, () => console.log('Website started on http://localhost:3333'))
