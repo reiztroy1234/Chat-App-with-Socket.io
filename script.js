@@ -24,41 +24,60 @@ function SendEvent(evnt,msg){
         user: SelectedUserName,
         message:msg
     });
-    console.log('MessageSent: ' + '['+evnt+']:' + msg);
+    console.log('MessageSent: ' + '['+JSON.stringify(evnt)+']:' + JSON.stringify(msg));
 }
+function SendServerEvent(evnt,clientChannel,msg){
+    socket.emit(SelectedChannel, {
+        serverEvent:evnt,
+        user:SelectedUserName,
+        cientChannel:clientChannel,
+        user: SelectedUserName,
+        message:msg
+    });
+}
+
 
 function Subscribe()
 {
-    let addr= document.getElementById('address');
-    if(addr && addr.value)
-    {
-        var xmlhttp = new XMLHttpRequest();
-        xmlhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var resp = JSON.parse(this.responseText);
-                console.log('Your ip is '+resp.ip);
-                SelectedUserName = resp.ip;
-                SetUserName(SelectedUserName.hashCode());
-                SetChannel(addr.value);
-                socket.emit('subscribe', {
-                    channel:SelectedChannel,
-                    user: SelectedUserName,
-                    message:SelectedUserName
-                });
-            }
-        };
-        xmlhttp.open("GET", 'https://api.ipify.org?format=json', true);
-        xmlhttp.send();
-    }
-    else
-    {
-        alert('Invalid Address');
-    }
+    SetUserName('admin');
+    SetChannel('12345678909876543212345678909876543212345678909876543212345678909876543210');
 }
 
-function UnSubscribe(){
-    SendEvent('unsubscribe','Have a nice day!');
+function TurnEchoLog(isON){
+    socket.emit(SelectedChannel,{'serverEvent':'echoLog',message:isON});
 }
+
+function AddChannel(clientChannel,msg){
+    SendServerEvent('addChannel',clientChannel,msg);
+}
+
+function RemoveChannel(clientChannel,msg){
+    SendServerEvent('removeChannel',clientChannel,msg);
+}
+
+function GetChannelList(){
+    SendServerEvent('getChannelList',{},{});
+}
+function Announcement(msg){
+    SendServerEvent('announcement',{},msg);
+}
+
+function SetPoll(msg){
+    SendServerEvent('setPoll',{},msg);
+}
+
+function ClearPoll(pollId){
+    SendServerEvent('clearPoll',{},pollId);
+}
+
+function AddHTMLElement(msg){
+    SendServerEvent('addHTMLElement',{},msg);
+}
+
+function RemoveHTMLElement(elementId){
+    SendServerEvent('removeHTMLElement',{},elementId);
+}
+
 
 function Message(msg){
     SendEvent('message',msg);

@@ -12,7 +12,7 @@ const io = socketio(server)
 let broadcastChannels = [];
 let socketLogs = [];
 let isLoggingEnabled = true;
-let isEchoLogToAdmin = false;
+let isEchoLogToAdmin = true;
 let adminChannel = '12345678909876543212345678909876543212345678909876543212345678909876543210';
 let suggestionList = [];
 let suggestionLogs = [];
@@ -23,57 +23,75 @@ io.on('connection', (socket) => {
     socket.emit('connected');
     socket.on('subscribe',(v)=>{
         let userid = v.user+'@'+v.channel;
-        if (!socketLogs.includes(userid) && (socketLogs[userid] == undefined || socketLogs[userid].timeStamp <= Date.now()))
+        if(!broadcastChannels.includes(v.channel))
         {
-            Log('subscription request from '+ userid +': ' + v.message);
-            socketLogs[userid] = {'timeStamp':Date.now()+60000};
-            io.emit(adminChannel,v);
+            if (!socketLogs.includes(userid) && (socketLogs[userid] == undefined || socketLogs[userid].timeStamp <= Date.now()))
+            {
+                Log('subscription request from '+ userid +': ' + v.message);
+                socketLogs[userid] = {'timeStamp':Date.now()+60000,user:v.user,channel:v.channel};
+                io.emit(adminChannel,v);
+            }
+            else
+            {
+                io.emit(v.channel,{user:'admin',event:'error',message:'Try again 1 minute after your last try.'});
+            }
         }
         else
         {
-            io.emit(v.channel,{user:'admin',event:'error',message:'Try again 1 minute after your last try.'});
+            io.emit(v.channel, {user:'admin',event:'subscribed',message:'Already subscribed'});             
         }
     });
 
     socket.on(adminChannel, (v) => {
-        switch(v.serverEvent)
+        try
         {
-            case 'addChannel'://>>
-                if(!broadcastChannels.includes(v.clientChannel))
-                {
-                    Log('channel added '+ v.clientChannel);
-                    broadcastChannels.push(v.clientChannel);
-                    io.on(v.clientChannel,onClientMessageReceived(v));
-                    io.emit(v.clientChannel, {user:'admin',event:'subscribed',message:v.message}); 
-                }   
-                break;
-            case 'removeChannel'://>>
-                ioRemoveChannel(v.clientChannel,v.message);
-                break;
-            case 'announcement'://>>
-                ioAdminBroadcast('announcement','admin',v.message);
-                break;
-            case 'setPoll'://>>
-                ioAdminBroadcast('setPoll','admin',v.message);
-                break;
-            case 'clearPoll'://>>
-                ioAdminBroadcast('clearPoll','admin',v.message);
-                break;
-            case 'addHTMLElement'://>>
-                ioAdminBroadcast('addHTMLElement','admin',v.message);
-                break;
-            case 'removeHTMLElement'://>>
-                ioAdminBroadcast('removeHTMLElement','admin',v.message);
-                break;
-            case 'directMessage'://>>
-                ioDirectMessage('admin',v.clientChannel,v.message);
-                break;
-            case 'echoLog'://>>
-                isEchoLogToAdmin = v.message == true || v.message == 'ON';
-                break;
-            default:
-                break;
-        }        
+            switch(v.serverEvent)
+            {
+                case 'addChannel'://>>
+                    if(!broadcastChannels.includes(v.clientChannel))
+                    {
+                        Log('channel added '+ v.clientChannel);
+                        broadcastChannels.push(v.clientChannel);
+                        io.on(v.clientChannel,onClientMessageReceived);
+                        io.emit(v.clientChannel, {user:'admin',event:'subscribed',message:v.message}); 
+                    }   
+                    break;
+                case 'removeChannel'://>>
+                    ioRemoveChannel(v.clientChannel,v.message);
+                    break;
+                case 'getChannelList'://>>
+                    io.emit(adminChannel,{event:'getChannelList',user:'admin',message:broadcastChannels});
+                    break;
+                case 'announcement'://>>
+                    ioAdminBroadcast('announcement','admin',v.message);
+                    break;
+                case 'setPoll'://>>
+                    ioAdminBroadcast('setPoll','admin',v.message);
+                    break;
+                case 'clearPoll'://>>
+                    ioAdminBroadcast('clearPoll','admin',v.message);
+                    break;
+                case 'addHTMLElement'://>>
+                    ioAdminBroadcast('addHTMLElement','admin',v.message);
+                    break;
+                case 'removeHTMLElement'://>>
+                    ioAdminBroadcast('removeHTMLElement','admin',v.message);
+                    break;
+                case 'directMessage'://>>
+                    ioDirectMessage('admin',v.clientChannel,v.message);
+                    break;
+                case 'echoLog'://>>
+                    isEchoLogToAdmin = v.message == true || v.message == 'ON';
+                    Log('isEchoLogToAdmin is '+ (isEchoLogToAdmin?'ON':'OFF'));
+                    break;
+                default:
+                    break;
+            }   
+        }
+        catch(e)
+        {
+            Log(e);
+        }     
     });
 });
 
@@ -89,8 +107,8 @@ function ioAdminBroadcast(evnt,msg)//<<
 
 function ioDirectMessage(fromUsr,resipientId,msg)
 {
-    socketLogs.filter(s=>s.userid)
-    io.emit(toChannel,{event:'directMessage',from:fromUsr,message:msg});
+    let resipient = socketLogs.find(s=>s.user == resipientId);
+    io.emit(resipient.channel,{event:'directMessage',user:fromUsr,message:msg});
 }
 
 function ioRemoveChannel(clientChannel,msg)//>>
@@ -107,7 +125,7 @@ function ioRemoveChannel(clientChannel,msg)//>>
 
 function onClientMessageReceived(v){
     let userid = v.user+'@'+v.channel;
-    if(broadcastChannels.includes(userid))
+    if(broadcastChannels.includes(v.channel))
     {
         switch(v.message.event){
             case 'getSuggestionList':
@@ -174,10 +192,12 @@ function onClientMessageReceived(v){
                     io.emit(v.channel,{event:'directMessage',user:v.user,message:{isSuccess:false,message:'Either you or the resipient are not allowed.'}});
                 }
                 break;
-            default:
+            case 'message':
                 Log('broadcast from '+ userid +': ' + v.message);
-                socketLogs[userid] = {'timeStamp':Date.now()};
+                socketLogs[userid].timeStamp = Date.now()/60000;
                 broadcastChannels.forEach((chnl)=>io.emit(chnl, {user:v.user,event:'message',message:v.message}));
+                break;
+            default:
                 break;
         }
         

@@ -6,19 +6,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+    <script src="../script.js"></script>
     <title>Hello World</title>
 </head>
 
 <body>
     <h4>The site was designed with minimal dependencies for optimal performance.</h4>
-    <form onsubmit="Subscribe()">
+    <form onsubmit="return false">
         <div>
-            <span>CHANNEL : </span>
-            <input type="text" id="address">12345678909876543212345678909876543212345678909876543212345678909876543210</input>
-            <input type="submit"> LOGIN</input>
+            <input type="text" id="address" name="address" value='12345678909876543212345678909876543212345678909876543212345678909876543210' hidden></input>
+            <input type="checkbox" id="echoLog" name="echoLog" onchange="TurnEchoLog(this.checked)" value="IsEchoLogON"></input>
         </div>
     </form>
+    <form>
+        <div>
+            <span>CHANNEL: </span>
+            <input type="text" id="channel" name="channel"></input>
+            <input type="checkbox" id="channelIsMember" name="channelIsMember" value="IsMEMBER"></input>
+            <input type="search" id="channelStatus" name="channelStatus" value="STATUS"></input>
+            <input type="button" onclick="AddChannel()" value="AddChannel"></input>
+            <input type="button" onclick="RemoveChannel()" value="RemoveChannel"></input>
+        </div>
+        <div>
+            <span>ANNOUNCEMENT: </span>
+            <input type="text" id="announcement" name="announcement" aria-multiline="true"></input>
+            <input type="button" onclick="Announcement()" value="ANNOUNCE"></input>
+        </div>
+        <div>
+            <span>HTMLELEMENT: </span>
+            <input type="search" id="elementType" name="elementType" value="TYPE"></input>
+            <input type="text" id="elementId" name="elementId"></input>
+            <input type="search" id="elementValueType" name="elementValueType" value="TYPE"></input>
+            <input type="text" id="elementValue" name="elementValue"></input>
+            <input type="button" onclick="AddHTMLElement()" value="AddElelement"></input>
+            <input type="button" onclick="RemoveHTMLElement()" value="RemoveElement"></input>
+        </div>
+        <div>
+            <span>MESSAGE: </span>
+            <input type="text" id="message" name="message" aria-multiline="true"></input>
+            <input type="checkbox" id="isDirectMessage" name="isDirectMessage" value="isDirectMessage"></input>
+            <input type="button" onclick="Message()" value="SEND"></input>
+        </div>
+    </form>
+    <button onclick="GetChannelList()" value="REFRESH CHANNELS"></button>
+    <table id="channelTable" class="table">
+        <tr>
+            <th>CHANNEL</th>
+            <th>IsMEMBER</th>
+            <th>STATUS</th>
+            <th></th>
+            <th></th>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </table>
 </body>
-
 </html>
